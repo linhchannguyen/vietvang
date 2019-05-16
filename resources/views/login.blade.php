@@ -35,11 +35,11 @@
                 <div class="col-md-4 col-md-offset-4">
                     <div class="login-panel panel panel-default">
                         <div class="panel-heading">
-                            <h3 class="panel-title">Vui lòng đăng nhập</h3>
+                            <h3 class="panel-title">Đăng nhập</h3>
                         </div>
                         <div class="panel-body">
                             <ul style="padding-inline-start: 0px;">
-                                @if ($errors->any())
+                                <!-- @if ($errors->any())
                                 <div class="alert alert-danger">
                                     @foreach ($errors->all() as $error)
                                         <li style="list-style: none;"> 
@@ -47,10 +47,10 @@
                                         </li>
                                     @endforeach
                                 </div>
-                                @endif
-                                @if(\Session::has('alert'))
+                                @endif -->
+                                @if(\Session::has('alert-error'))
                                     <div class="alert alert-danger">
-                                        <div>{{Session::get('alert')}}</div>
+                                        <div>{{Session::get('alert-error')}}</div>
                                     </div>
                                 @endif
                                 @if(\Session::has('alert-success'))
@@ -63,13 +63,15 @@
                                 {{ csrf_field() }}
                                 <fieldset>
                                     <div class="form-group">
-                                        <input class="form-control" placeholder="E-mail" name="email" id="email" type="email" autofocus>
-                                    </div>
+                                        <input class="form-control" value="{{Session::get('signup_email')}}" placeholder="E-mail" name="email" id="email" type="email" autofocus>
+                                        {!! $errors->first('email', '<p class="help-block alert-danger">:message</p>') !!}
+                                    </div>     
                                     <div class="form-group">
                                         <input class="form-control" placeholder="Mật khẩu" name="password" id="password" type="password" value="">
+                                        {!! $errors->first('password', '<p class="help-block alert-danger">:message</p>') !!}
                                     </div>
                                     <div class="form-group">
-                                        <a href="{{route('forget-password')}}">Quên mật khẩu</a> | <a href="{{route('signup')}}">Đăng ký</a>
+                                        <a href="{{route('forget-password')}}">Quên mật khẩu</a> | <a href="{{route('user_signup')}}">Đăng ký user</a> | <a href="{{route('admin_signup')}}">Đăng ký admin</a>
                                     </div>
                                     <button id="btn-login" class="btn btn-lg btn-success btn-block">Đăng nhập</button>
                                 </fieldset>

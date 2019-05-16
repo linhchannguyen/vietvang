@@ -41,7 +41,11 @@ class User extends Authenticatable
      */
     public static function getAllUser()
     {
-        return User::all();
+        return User::select('*')
+                ->leftJoin('admins', 'users.ad_id', '=', 'admins.admin_id')
+                ->leftJoin('genders', 'users.gender_id', '=', 'genders.gender_id')
+                ->leftJoin('user_types', 'users.role', '=', 'user_types.type_id')
+                ->get();
     }
 
     /**
@@ -66,6 +70,7 @@ class User extends Authenticatable
     public static function updateAccount($email){
         User::where('email', $email)
             ->update([
+                'token' => null,
                 'activated' => 1,
                 'attempt' => 0,
                 'last_access' => date('Y-m-d H:i:s'),
@@ -83,6 +88,7 @@ class User extends Authenticatable
     public static function blockAccount($email){
         User::where('email', $email)
             ->update([
+            'token' => null,
             'activated' => 0,
             'last_access' => date('Y-m-d H:i:s'),
             ]);

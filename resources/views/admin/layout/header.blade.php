@@ -64,7 +64,7 @@
 
                 <ul class="nav navbar-right navbar-top-links">
                     <li class="dropdown">
-                        @if(Auth::check())
+                        @if(Session::get('login', true))
                             <a class="dropdown-toggle" data-toggle="dropdown" href="#">
                                 <i class="fa fa-user fa-fw"></i> {{Session::get('name')}} <b class="caret"></b>
                             </a>

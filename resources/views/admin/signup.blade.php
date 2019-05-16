@@ -7,7 +7,7 @@
         <meta name="description" content="">
         <meta name="author" content="">
 
-        <title>User Register</title>
+        <title>Admin Register</title>
 
         <!-- Bootstrap Core CSS -->
         <link href="{{url('assets/admin/css/bootstrap.min.css')}}" rel="stylesheet">
@@ -52,9 +52,9 @@
                                     <div>{{Session::get('alert-success')}}</div>
                                 </div>
                             @endif
-                            <form role="form" action="{{route('user_signup')}}" method="post">
+                            <form role="form" action="{{route('admin_signup')}}" method="post">
                                 {{ csrf_field() }}
-                                <div class="form-group">
+                                <div class="form-group ">
                                     <label class="control-label">First name *:</label>
                                     <input type="text" id="first_name" name="first_name" class="form-control" placeholder="Please Input first name" autofocus>
                                     {!! $errors->first('first_name', '<p class="help-block alert-danger">:message</p>') !!}
@@ -65,23 +65,25 @@
                                     {!! $errors->first('last_name', '<p class="help-block alert-danger">:message</p>') !!}
                                 </div>
                                 <div class="form-group">
-                                    <label class="control-label">Email *:</label>
+                                    <label class="control-label">Email *</label>
                                     <input type="email" id="email" name="email" class="form-control" placeholder="Please input your email">
                                     {!! $errors->first('email', '<p class="help-block alert-danger">:message</p>') !!}
                                 </div>
                                 <div class="form-group">
-                                    <label class="control-label">Password *:</label>
+                                    <label class="control-label">Password *</label>
                                     <input type="password" id="password" name="password" class="form-control" placeholder="Please input your password">
                                     {!! $errors->first('password', '<p class="help-block alert-danger">:message</p>') !!}
-                                </div>
+                                </div>        
+                                
                                 <div class="form-group">
-                                    <label class="control-label">Repassword *:</label>
+                                    <label class="control-label">Repassword *</label>
                                     <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" placeholder="Password confirm">
                                     {!! $errors->first('password_confirmation', '<p class="help-block alert-danger">:message</p>') !!}
-                                </div>                                        
+                                </div>                          
                                 <div class="form-group">
                                     <a href="{{route('login')}}">Đã có tài khoản</a>
                                 </div>
+                                
                                 <div class="text-center">
                                     <button type="submit" class="form-control btn btn-primary">Đăng ký</button>
                                 </div>

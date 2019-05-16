@@ -10,6 +10,11 @@
     <h1>Chúc mừng bạn đã đăng ký tài khoản thành công! </h1>
     <hr>
     <p>Chào mừng <b>{{$name}}</b> đã đến với chương trình Thực Tập tại Công ty Cổ phần Tư vấn và Cung cấp Giải pháp quản trị chuẩn Việt Vang </p>
+    <br>
+    <h3>Truy cập đường dẫn sau để đăng nhập:</h3>
+    <p><a href="{{$link}}">{{$link}}</a></p>
+    <br>
+    <br>
     <hr>
     <p>Công ty Cổ phần Tư vấn và Cung cấp Giải pháp quản trị chuẩn Việt Vang</p>
     <p>Địa chỉ: Số 7, Trần Xuân Hòa, Phường 7, Quận 5, Hồ Chí Minh</p>

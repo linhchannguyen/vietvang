@@ -7,6 +7,9 @@
 namespace App\Http\Controllers;
 
 use App\User;
+use App\Http\Models\Admin;
+use App\Http\Models\Gender;
+use App\Http\Models\User_Type;
 use Illuminate\Http\Request;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\Facades\Mail;
@@ -19,11 +22,17 @@ class UserController extends Controller
 {
     // Attribute user of User Model
     protected $user;
+    protected $user_type;
+    protected $gender;
+    protected $admin;
 
     // Constructor User object
     public function __construct ()
     {
         $this->user = new User();
+        $this->user_type = new User_Type();
+        $this->gender = new Gender();
+        $this->admin = new Admin();
     }
 
     /**
@@ -53,18 +62,16 @@ class UserController extends Controller
     {
         if(Session::get('token'))
         {
-            $user = $this->user->findUserByToken(Session::get('token'));
-            // dd($user);
+            $user = $this->admin->findUserByToken(Session::get('token'));
             if($user){
                 if($user->token == Session::get('token') && $user->role == 1)
                 {
-                    // dd('vo 2');
                     return redirect('admin/');
                 }
             }
             
         }
-        return view('admin.login');
+        return view('login');
     }
 
     /**
@@ -73,6 +80,7 @@ class UserController extends Controller
      */
     public function do_login(Request $request)
     {       
+        Session::forget('signup_email');
         // Check all fields in form reset password with Validator method
         $validator = Validator::make($request->all(), 
             [
@@ -81,9 +89,9 @@ class UserController extends Controller
             ],
             [
                 // Show notification
-                'email.required' => 'Email là trường bắt buộc', 
+                'email.required' => 'Vui lòng nhập email', 
                 'email.email' => 'Email không đúng định dạng',
-                'password.required' => 'Mật khẩu là trường bắt buộc',
+                'password.required' => 'Vui lòng nhập mật khẩu',
                 'password.min' => 'Mật khẩu phải chứa ít nhất 6 ký tự',
             ]
         );
@@ -93,38 +101,83 @@ class UserController extends Controller
             try {
                 $email = $request->input('email');
                 $password = $request->input('password');
-                $data = $this->user->findUserByEmail($email);
+                // $data = $this->user->findUserByEmail($email);
+                
+                $data;
+                $user = $this->user->findUserByEmail($email);
+                $admin = $this->admin->findAdminByEmail($email);
+                if (!$user && !$admin) {
+                    return redirect()->back()->with('alert-error', 'Email không tồn tại!');
+                }
+                if($user)
+                {
+                    $data = $user;
+                }
+                if($admin)
+                {
+                    $data = $admin;
+                }
+                
                 if ($data->activated == 0) {
                     $minutes = round((time() - strtotime($data->last_access)) / 60);
                     if ($minutes <= 30) {
                         $errors = new MessageBag(['error' => 'Tài khoản đã bị khóa']);
                         return redirect()->back()->withInput()->withErrors($errors);
                     } else {
-                        $this->user->updateAccount($email);
-                        return redirect('/admin/login')->with('alert-success', 'Tài khoản đã được kích hoạt, vui lòng đăng nhập lại!');
+                        if($data->role == 1){
+                            $this->admin->updateAccount($email);
+                        }
+                        if($data->role != 1){
+                            $this->user->updateAccount($email);
+                        }
+                        return redirect('/login')->with('alert-success', 'Tài khoản đã được kích hoạt, vui lòng đăng nhập lại!');
                     }
                 } else {
-                    if (Auth::attempt(['email' => $email, 'password' => $password])) {
-                        $user = \auth()->user();
-                        $user->token = str_random(32);
-                        $user->token_expire = strtotime('1 days');
-                        $user->save();
-                        Session::put('name', $data->name);
-                        Session::put('id', $data->id);
-                        Session::put('token', $user->token);
-                        Session::put('login', TRUE);
-                        $this->user->loginSuccess($email);
-                        if($data->role == 1)
-                        {
-                            return redirect('/admin');
-                        }else 
-                        {
+                    if (Auth::guard('user')->attempt(['email' => $email, 'password' => $password]) || Auth::guard('admin')->attempt(['email' => $email, 'password' => $password])) 
+                    {                      
+                        if($data->role != 1){
+                            $token = str_random(32);
+                            $data->token = $token;
+                            $data->token_expire = strtotime('1 days');
+                            $data->save();
+                            Session::put('name', $data['last_name']);
+                            Session::put('id', $data->id);
+                            Session::put('role', $data->role);
+                            Session::put('token', $token);
+                            Session::put('login', TRUE);
                             return redirect('/welcome');
                         }
+                        if($data->role == 1){
+                            $token = str_random(32);
+                            $data->token = 
+                            $data->token_expire = strtotime('1 days');
+                            Admin::where('email', $email)
+                            ->update([
+                            'token' => $token,
+                            ]);
+                            Session::put('name', $data['last_name']);
+                            Session::put('id', $data->id);
+                            Session::put('email', $data->email);
+                            Session::put('role', $data->role);
+                            Session::put('token', $token);
+                            Session::put('login', TRUE);
+                            $this->admin->loginSuccess($email);
+                            return redirect('/admin');
+                        }
                     } else {
-                        $this->user->updateAttemptLoginFail($email, $data->attempt);
+                        if($data->role != 1){
+                            $this->user->updateAttemptLoginFail($email, $data->attempt);
+                        }
+                        if($data->role == 1){
+                            $this->admin->updateAttemptLoginFail($email, $data->attempt);
+                        }
                         if (($data->attempt) + 1 >= 3) {
-                            $this->user->blockAccount($email);
+                            if($data->role != 1){
+                                $this->user->blockAccount($email);
+                            }
+                            if($data->role == 1){
+                                $this->admin->blockAccount($email);
+                            }                            
                             $errors = new MessageBag(['login' => 'Nhập sai quá số lần quy định, tài khoản đã bị khóa!']);
                             return redirect()->back()->withInput()->withErrors($errors);
                         }
@@ -134,6 +187,7 @@ class UserController extends Controller
                 }
             }catch (\Exception $exception)
             {
+                dd($exception);
                 return redirect()->back()->withInput()->withErrors($exception);
             }
         }
@@ -143,57 +197,147 @@ class UserController extends Controller
      * Register
      * User register account
      */
-    public function signup()
+    public function user_signup()
     {
-    return view('client.signup');
+        $genders = $this->gender->getAllGender();
+        return view('client.signup', compact('genders'));
     }
 
      /**
      * Handle signup
      * Create account with name, email, password
      */
-    public function store(Request $request){
-        if($request['password'] != $request['repassword'])
+    public function user_store(Request $request){
+        $validator = Validator::make(
+            $request->all(),
+            [
+            'first_name' => 'required|min:2|max:30',
+            'last_name' => 'required|min:2|max:30',
+            'email' => 'required|min:15|max:50|email|unique:users|unique:admins',
+            'password' => 'required|min:6|max:30|required_with:password_confirmation|same:password_confirmation',
+            'password_confirmation' => 'required|min:6|max:30',
+            ],
+            [
+            'first_name.required' => 'Vui lòng nhập họ',
+            'first_name.min' => 'Họ quá ngắn',
+            'first_name.max' => 'Họ quá dài',
+            'last_name.required' => 'Vui lòng nhập tên',
+            'last_name.min' => 'Tên quá ngắn',
+            'last_name.max' => 'Tên quá dài',
+            'email.required' => 'Vui lòng nhập email',
+            'email.email' => 'Email không đúng định dạng',
+            'password.required' => 'Vui lòng nhập mật khẩu',
+            'password.min' => 'Mật khẩu phải chứa ít nhất 6 ký tự',     
+            'password.same' => 'Mật khẩu không chính xác',                        
+            'password.required_with' => 'Mật khẩu không chính xác',            
+            'password_confirmation.required' => 'Vui lòng nhập lại mật khẩu',
+            'password_confirmation.min' => 'Mật khẩu phải chứa ít nhất 6 ký tự',     
+            'password_confirmation.same' => 'Mật khẩu không chính xác',            
+            ]
+        );
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }else 
         {
-            $errors = new MessageBag(['signup' => 'Mật khẩu không phù hợp']);
-            return redirect()->back()->withErrors($errors)->withInput();
-        }else
-        {
-            $validator = Validator::make($request->all(),[
-                'name' => 'required|min:4',
-                'email' => 'required|min:4|email|unique:users',
-                'password' => 'required|min:6',
-                'repassword' => 'required|min:6',
-            ],[
-                'name.required' => 'Vui lòng nhập họ tên',
-                'name.min' => 'Tên quá ngắn',
-                'email.required' => 'Vui lòng nhập email',
-                'email.email' => 'Email không đúng định dạng',
-                'password.required' => 'Vui lòng nhập mật khẩu',
-                'password.min' => 'Mật khẩu phải chứa ít nhất 6 ký tự',            
-                'repassword.required' => 'Vui lòng nhập lại mật khẩu',
-                'repassword.min' => 'Mật khẩu phải chứa ít nhất 6 ký tự',
-            ]);
-            if ($validator->fails()) {
-                return redirect()->back()->withErrors($validator)->withInput();
-            }else 
-            {
-                $this->user->role = 2;
-                $this->user->name = $request['name'];
-                $this->user->email = $request['email'];
-                $this->user->password = bcrypt($request['password']);
-                $this->user->activated = 1;
-                $this->user->last_access = date('Y-m-d H:i:s');
-                $this->user->attempt = 0;
-                $this->user->save();
-                $email = $request['email'];
-                $user = $this->user->findUserByEmail($email);
-                Mail::send('admin.emails.signup', array('name' => $request['name'],'email' => $request['email']), function($message) use ($email){
-                    $message->to($email, 'User')->subject('Công Ty Việt Vang Xin Chào');
-                });
-                return redirect('admin/login')->with('alert-success','Đăng ký tài khoản thành công. Vui lòng kiểm tra mail!');
-            }
+            $this->user->role = 2;
+            $this->user->first_name = $request['first_name'];
+            $this->user->last_name = $request['last_name'];
+            $this->user->email = $request['email'];
+            $this->user->password = bcrypt($request['password']);
+            // $this->user->gender_id = $request['gender'];
+            // $this->user->birthday = $request['birthday'];
+            // if($request['postcode'] != null)
+            // {
+            //     $this->user->postcode = $request['postcode'];
+            // }
+            // if($request['phone'] != null)
+            // {
+            //     $this->user->phone = $request['phone'];
+            // }
+            // if($request['address'] != null)
+            // {
+            //     $this->user->address = $request['address'];
+            // }
+            $this->user->activated = 1;
+            $this->user->last_access = date('Y-m-d H:i:s');
+            $this->user->attempt = 0;
+            $this->user->save();
+            $email = $request['email'];
+            // $user = $this->user->findUserByEmail($email);
+            Session::put('signup_email', $email);
+            $link = route('login');
+            Mail::send('admin.emails.signup', array('name' => $request['last_name'],'signup_email' => $request['email'], 'link' => $link), function($message) use ($email){
+                $message->to($email, 'User')->subject('Công Ty Việt Vang Xin Chào');
+            });
+            return redirect('login')->with('alert-success','Đăng ký tài khoản thành công. Vui lòng kiểm tra mail!');
         }
+    }
+
+    /**
+     * Register
+     * Admin register account
+     */
+    public function admin_signup()
+    {
+        $genders = $this->gender->getAllGender();
+        return view('admin.signup', compact('genders'));
+    }
+
+    /**
+    * Handle signup
+    * Create account with name, email, password
+    */
+    public function admin_store(Request $request){
+        $validator = Validator::make(
+            $request->all(),
+            [
+            'first_name' => 'required|min:2|max:30',
+            'last_name' => 'required|min:2|max:30',
+            'email' => 'required|min:15|max:50|email|unique:users|unique:admins',
+            'password' => 'required|min:6|max:30|required_with:password_confirmation|same:password_confirmation',
+            'password_confirmation' => 'required|min:6|max:30',
+            ],
+            [
+            'first_name.required' => 'Vui lòng nhập họ',
+            'first_name.min' => 'Họ quá ngắn',
+            'first_name.max' => 'Họ quá dài',
+            'last_name.required' => 'Vui lòng nhập tên',
+            'last_name.min' => 'Tên quá ngắn',
+            'last_name.max' => 'Tên quá dài',
+            'email.required' => 'Vui lòng nhập email',
+            'email.email' => 'Email không đúng định dạng',
+            'email.min' => 'Email không đúng định dạng',
+            'password.required' => 'Vui lòng nhập mật khẩu',
+            'password.min' => 'Mật khẩu phải chứa ít nhất 6 ký tự',            
+            'password.same' => 'Mật khẩu không chính xác',            
+            'password_confirmation.required' => 'Vui lòng nhập lại mật khẩu',
+            'password_confirmation.min' => 'Mật khẩu phải chứa ít nhất 6 ký tự',
+            ]
+        );
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }else 
+        {          
+
+            // Insert info in User table
+            $this->admin->role = 1;
+            $this->admin->first_name = $request['first_name'];
+            $this->admin->last_name = $request['last_name'];
+            $this->admin->email = $request['email'];
+            $this->admin->password = bcrypt($request['password']);
+            $this->admin->activated = 1;
+            $this->admin->last_access = date('Y-m-d H:i:s');
+            $this->admin->attempt = 0;
+            $this->admin->save();
+            $email = $request['email'];
+            // $user = $this->user->findUserByEmail($email);
+            Session::put('signup_email', $email);
+            $link = route('login');
+            Mail::send('admin.emails.signup', array('name' => $request['last_name'],'email' => $request['email'], 'link' => $link), function($message) use ($email){
+                $message->to($email, 'User')->subject('Công Ty Việt Vang Xin Chào');
+            });
+            return redirect('login')->with('alert-success','Đăng ký tài khoản thành công. Vui lòng kiểm tra mail!');
+       }
     }
 
      /**
@@ -222,12 +366,20 @@ class UserController extends Controller
         $reset_pass_token = str_random(30);
         Session::put('token_forget', $reset_pass_token);
         $user = $this->user->findUserByEmail($email);
-        if (!$user) {
-            $error = new MessageBag(['error' => 'Email không hợp lệ!']);
+        $admin = $this->admin->findAdminByEmail($email);        
+        if (!$user && !$admin) {
+            $error = new MessageBag(['error' => 'Email không tồn tại!']);
             return redirect()->back()->withInput()->withErrors($error);
         }
-        $user->reset_pass_token = $reset_pass_token;
-        $user->save();
+        $data;
+        if($user) {
+            $data = $user;
+        }
+        if($admin) {
+            $data = $admin;
+        }
+        $data->reset_pass_token = $reset_pass_token;
+        $data->save();
         $link = route('reset-link',['token'=>$reset_pass_token,'email'=>$email]);
         Mail::send('admin.emails.reset_email', array(
             'link'=> $link
@@ -239,6 +391,7 @@ class UserController extends Controller
 
     /**
      * Reset link
+     * Send content mail to user mail define password change
      */
     public function reset_link($token, $email){
         if(Session::get('token_forget') == null)
@@ -246,41 +399,63 @@ class UserController extends Controller
             $errors = new MessageBag(['error' => 'Thời gian chờ quá lâu, vui lòng kiểm tra lại!']);
             return redirect('/admin/404_page')->with('errors', $errors);
         }
-        $user = User::where('email',$email)->first();
-        if ($user->reset_pass_token == $token) {
-            return view("admin.reset_form",compact('email'));
-        }
+        return view("admin.reset_form",compact('email'));
     }
 
     /**
-     * Handle reset password
+     * Reset password
+     * Check all fields in form reset password with Validator method
+     * Find user
      */
     function do_reset(Request $request){
-        // Check all fields in form reset password with Validator method
+        
         $validator = Validator::make($request->all(),[
             'email'=>'required|email',
-            'password'=>'required|min:6'
-        ],[]);
+            'password' => 'required|min:6|max:30|required_with:password_confirmation|same:password_confirmation',
+            'password_confirmation' => 'required|min:6|max:30',
+        ],[            
+            'password.required' => 'Vui lòng nhập mật khẩu',
+            'password.min' => 'Mật khẩu phải chứa ít nhất 6 ký tự',            
+            'password.same' => 'Mật khẩu không chính xác',            
+            'password_confirmation.min' => 'Mật khẩu phải chứa ít nhất 6 ký tự',
+            'password_confirmation.same' => 'Mật khẩu không chính xác',
+            
+        ]);
         if ($validator->fails()) {
-            $errors = new MessageBag(['error' => 'Reset mật khẩu thất bại, lỗi dữ liệu truyền vào ko đúng ràng buộc']);
-            return redirect()->back()->withInput()->withErrors($errors);
+            return redirect()->back()->withErrors($validator)->with('alert-success', 'Mật khẩu đã được thay đổi.!');
         }
         $email = $request->email;
         $password = $request->password;
         $user = User::where('email',$email)->first();
-        $user->password = bcrypt($password);
-        $user->reset_pass_token = "";
-        $user->save();
-        return redirect('/admin/login');
+        $admin = Admin::where('email',$email)->first();
+        $data;
+        if($user)
+        {
+            $data = $user;
+        }
+        if($admin)
+        {
+            $data = $admin;
+        }
+        if($data->reset_pass_token == null)
+        {
+            return redirect()->back()->withErrors($validator)->with('alert-error', 'Url đã bị vô hiệu hóa!');
+        }
+        $data->password = bcrypt($password);
+        $data->reset_pass_token = "";
+        $data->save();
+        Session::put('signup_email', $email);
+        return redirect('/login');
     }
 
     /**
-     * Login
-     * User logout
+     * Admin logout
+     * Redirect the user to the login screen
+     * Set admin token by null whith adminLogout method
      */
     public function logout(){
-        Auth::logout();
-        $this->user->userLogout(Session::get('token'));
-        return Redirect::to('/admin/login'); // redirect the user to the login screen
+        $this->admin->adminLogout(Session::get('token'));
+        Auth::guard('admin')->logout(); 
+        return Redirect::to('/login');
     }
 }

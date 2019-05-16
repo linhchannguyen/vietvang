@@ -18,11 +18,17 @@ Route::get('/welcome', function(){
     return view('welcome');
 });
 
+Route::get('/login', 'UserController@login')->name('login');
+Route::post('/login', 'UserController@do_login')->name('login');
+
+Route::group(['prefix' => '/user'], function () {
+    Route::get('/signup', 'UserController@user_signup')->name('signup');
+    Route::post('/signup', 'UserController@user_store')->name('user_signup');
+});
+
 Route::group(['prefix' => '/admin'], function () {
-    Route::get('/login', 'UserController@login')->name('login');
-    Route::post('/login', 'UserController@do_login')->name('login');
-    Route::get('/signup', 'UserController@signup')->name('signup');
-    Route::post('/signup', 'UserController@store')->name('signup');
+    Route::get('/signup', 'UserController@admin_signup')->name('signup');
+    Route::post('/signup', 'UserController@admin_store')->name('admin_signup');
     Route::get('/forget-password', 'UserController@forget_password')->name('forget-password');
     Route::post('/sendMail','UserController@sendMail')->name('send-mail');
     Route::get('/reset-pass/{token}/{email}','UserController@reset_link')->name('reset-link');

@@ -38,27 +38,28 @@
                             <h3 class="panel-title">Quên mật khẩu</h3>
                         </div>
                         <div class="panel-body">
-                            <ul style="padding-inline-start: 0px;">
-                                @if ($errors->any())
-                                <div class="alert alert-danger">
-                                    @foreach ($errors->all() as $error)
-                                        <li style="list-style: none;"> 
-                                            {{ $error }}
-                                        </li>
-                                    @endforeach
-                                </div>
-                                @endif
-                            </ul>
-
-                            
+                            @if(\Session::has('alert-error'))
+                            <div class="alert alert-danger">
+                                <div>{{Session::get('alert-error')}}</div>
+                            </div>
+                            @endif
                             <form action="{{route('do-reset')}}" method="post" role="form">
                                 {{ csrf_field() }}
                                 <fieldset>
                                     <input type="hidden" name="email" value="{{$email}}">
                                     <div class="form-group">
-                                        <label for="">Mật khẩu mới</label>
-                                        <input type="password" name="password" id="password" class="form-control">
+                                        <label for="">Mật khẩu mới *</label>
+                                        <input type="password" name="password" id="password" class="form-control" placeholder="Please input your password">
+                                        {!! $errors->first('password', '<p class="help-block alert-danger">:message</p>') !!}
                                     </div>
+                                    <div class="form-group">
+                                        <label class="control-label">Nhập lại mật khẩu *</label>
+                                        <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" placeholder="Password confirm">
+                                        {!! $errors->first('password_confirmation', '<p class="help-block alert-danger">:message</p>') !!}
+                                    </div>   
+                                    <div class="form-group">
+                                        <a href="{{route('login')}}">Đăng nhập</a>
+                                    </div>   
                                     <button type="submit" class="btn btn-lg btn-success btn-block">Lưu</button>
                                 </fieldset>
                             </form>

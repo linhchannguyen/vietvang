@@ -15,28 +15,41 @@ class DatabaseSeeder extends Seeder
     {
         $faker = Faker::create();
         DB::table('users')->insert([
-            'name' => 'Nguyễn Linh Chân',
-            'email' => 'linhchannguyen94@gmail.com',
-            'password' => bcrypt('123456'),
-            'role' => 1,
-            'last_access' => Carbon::now()->format('Y-m-d H:i:s'),
-            'attempt' => 0,
-            'activated' => 1,
-        ]);
-        DB::table('users')->insert([
-            'name' => 'Nguyễn Anh Kiệt',
-            'email' => 'nguyenanhkiet@gmail.com',
+            'email' => 'user@gmail.com',
             'password' => bcrypt('123456'),
             'role' => 2,
+            'first_name' => 'Nguyễn',
+            'last_name' => 'Anh Kiệt',
+            'gender_id' => 1,
+            'birthday' => '1994-4-30',
+            'postcode' => $faker->numberBetween(100000, 990000),
+            'address' => 'HCM',
+            'phone' => '0123123123',
+            'last_access' => Carbon::now()->format('Y-m-d H:i:s'),
+            'attempt' => 0,
+            'activated' => 1,
+        ]);
+        DB::table('admins')->insert([
+            'email' => 'admin@gmail.com',
+            'password' => bcrypt('123456'),
+            'role' => 1,
+            'first_name' => 'Nguyễn',
+            'last_name' => 'Anh Kiệt',
             'last_access' => Carbon::now()->format('Y-m-d H:i:s'),
             'attempt' => 0,
             'activated' => 1,
         ]);
         DB::table('user_types')->insert([
-            'role' => 'Admin'
+            'type_role_name' => 'Admin'
         ]);
         DB::table('user_types')->insert([
-            'role' => 'User'
+            'type_role_name' => 'User'
+        ]);
+        DB::table('genders')->insert([
+            'gender_name' => 'Male'
+        ]);
+        DB::table('genders')->insert([
+            'gender_name' => 'Female'
         ]);
     }
 }

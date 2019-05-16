@@ -24,8 +24,12 @@
                             <thead>
                                 <tr>
                                     <th>STT</th>
-                                    <th>Name</th>
+                                    <th>First Name</th>
+                                    <th>Last Name</th>
                                     <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Gender</th>
+                                    <th>Birthday</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -33,8 +37,13 @@
                             @foreach ($users as $user)
                                 <tr>
                                     <td>{{ $user->id }}</td>
-                                    <td>{{ $user->name }}</td>
+                                    <td>{{ $user->first_name }}</td>
+                                    <td>{{ $user->last_name }}</td>
                                     <td>{{ $user->email }}</td>
+                                    <td>{{ $user->type_role_name }}</td>
+                                    <td>{{ $user->gender_name }}</td>
+                                    <!-- {{date('Y-m-d', strtotime($user->birthday))}} -->
+                                    <td>{{date('Y-m-d', strtotime($user->birthday))}}</td>
                                     <td>x</td>
                                 </tr>
                             @endforeach

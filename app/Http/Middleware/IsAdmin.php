@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Models\Admin;
 use Closure;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\Facades\Auth;
@@ -18,23 +19,41 @@ class IsAdmin
      */
     public function handle($request, Closure $next)
     {
-        if(!Auth::check())
+        if(!Session::get('login', true))
         {
             $errors = new MessageBag(['errors' => 'Vui lòng đăng nhập lại!']);
-            return redirect('/admin/login')->withInput()->withErrors($errors);
+            return redirect('/login')->withInput()->withErrors($errors);
         }
-        
-        if(Auth::check())
+
+        $role = Session::get('role');
+        $email = Session::get('email');
+        $ad = Admin::where('email', $email)->first();
+        if(!$ad)
         {
-            $user = \auth()->user();
-            if($user) {
-                if($user->role != 1)
-                {
-                    $errors = new MessageBag(['errors' => 'Bạn không phải Admin!']);
-                    return redirect('/admin/login')->withInput()->withErrors($errors);
-                }
-            }
-        }    
+            $errors = new MessageBag(['errors' => 'Bạn không phải Admin, vui lòng đăng nhập lại!']);
+            return redirect('/login')->withInput()->withErrors($errors);
+        }
+        if($ad['role'] != 1)
+        {
+            $errors = new MessageBag(['errors' => 'Bạn không phải Admin!']);
+            return redirect('/login')->withInput()->withErrors($errors);
+        }
+        if($ad['token'] == null)
+        {
+            $errors = new MessageBag(['errors' => 'Vui lòng đăng nhập lại!']);
+            return redirect('/login')->withInput()->withErrors($errors);
+        }
+        // if(Auth::check())
+        // {
+        //     $user = \auth()->user();
+        //     if($user) {
+        //         if($user->role != 1)
+        //         {
+        //             $errors = new MessageBag(['errors' => 'Bạn không phải Admin!']);
+        //             return redirect('/login')->withInput()->withErrors($errors);
+        //         }
+        //     }
+        // }    
         return $next($request);
     }
 }
