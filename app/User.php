@@ -42,7 +42,6 @@ class User extends Authenticatable
     public static function getAllUser()
     {
         return User::select('*')
-                ->leftJoin('admins', 'users.ad_id', '=', 'admins.admin_id')
                 ->leftJoin('genders', 'users.gender_id', '=', 'genders.gender_id')
                 ->leftJoin('user_types', 'users.role', '=', 'user_types.type_id')
                 ->get();

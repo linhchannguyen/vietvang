@@ -6,6 +6,7 @@
  */
 namespace App\Http\Controllers;
 
+use Excel;
 use App\User;
 use App\Http\Models\Admin;
 use App\Http\Models\Gender;
@@ -54,6 +55,114 @@ class UserController extends Controller
         return view('admin.users.user_list', compact('users'));
     }
 
+    public function export()
+    {
+        $users = $this->user->getAllUser()->toArray();
+        $data_arr[] = array(
+            'First Name',
+            'Last Name',	
+            ' Gender ID',
+            'Birthday',
+            'Phone Number',
+            'Postcode',	
+            'Email',	
+            'Address',
+            'Activated',
+            'Role');
+        foreach($users as $value)
+        {
+            $data_arr[] = array(
+                'First Name'    => $value['first_name'],
+                'Last Name'     => $value['last_name'],
+                'Gender ID'     => $value['gender_id'],
+                'Birthday'      => date('Y-m-d', strtotime($value['birthday'])),
+                'Phone Number'  => $value['phone'],
+                'Postcode'      => $value['postcode'],
+                'Email'         => $value['email'],
+                'Address'       => $value['address'],
+                'Activated'     => $value['activated'],
+                'Role'          => $value['role']);
+        }
+        Excel::create('Users', function($excel) use ($data_arr){
+            $excel->setTitle('Users');
+            $excel->sheet('Users', function($sheet) use ($data_arr){
+                $sheet->fromArray($data_arr, null, 'A1', false, false);
+            });
+        })->download('xls');
+    }
+
+    /**
+     * Import excel file
+     * Update or Create user with data into excel file
+     */
+    public function import(Request $request)
+    {
+        $validator = Validator::make($request->all(), 
+            [
+            'user_file' =>'required|mimes:xls,xlsx'
+            ],
+            [
+                'user_file.required' => 'Vui lòng chọn file trước khi hành động',
+                'user_file.mimes' => 'Vui lòng chọn file trước khi hành động',
+            ]
+        );
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator);
+        }
+        else {
+            $path = $request->file('user_file')->getRealPath();
+            $data = Excel::load($path)->get();
+            if($data->count() > 0)
+            {
+                foreach($data->toArray() as $values)
+                {
+                    foreach($values as $value)
+                    {
+                        $user_insert[] = array(
+                            'role' => $value['role'],
+                            'first_name' => $value['first_name'],
+                            'last_name' => $value['last_name'],
+                            'email' => $value['email'],
+                            'password' => $value['password'],
+                            'gender_id' => $value['gender_id'],
+                            'birthday' => date('Y-m-d', strtotime($value['birthday'])),
+                            'postcode' => $value['postcode'],
+                            'phone' => $value['phone_number'],
+                            'address' => $value['address'],
+                            'activated' => $value['activated'],
+                        );
+                    }                    
+                }
+                foreach($user_insert as $value)   
+                {
+                    $users = $this->user->where('email', $value['email'])->get();
+                    
+                    if(count($users) != 0)
+                    {
+                        $this->user->where('email', $value['email'])
+                        ->update([
+                        'role' => $value['role'],
+                        'first_name' => $value['first_name'],
+                        'last_name' => $value['last_name'],
+                        'email' => $value['email'],
+                        'password' => bcrypt($value['password']),
+                        'gender_id' => $value['gender_id'],
+                        'birthday' => date('Y-m-d', strtotime($value['birthday'])),
+                        'postcode' => $value['postcode'],
+                        'phone' => $value['phone'],
+                        'address' => $value['address'],
+                        'activated' => $value['activated'],
+                        ]);
+                    }
+                    else {
+                        $this->user->insert($value);
+                    }
+                }
+            }
+            return back()->with('success', 'Excel Data Imported successfully.');
+        }
+    }
+
     /**
      * Login theme
      * Redirect to login theme
@@ -68,8 +177,7 @@ class UserController extends Controller
                 {
                     return redirect('admin/');
                 }
-            }
-            
+            }            
         }
         return view('login');
     }
@@ -77,11 +185,11 @@ class UserController extends Controller
     /**
      * Login
      * User login with email and password.
+     * Check all fields in form reset password with Validator method
      */
     public function do_login(Request $request)
     {       
         Session::forget('signup_email');
-        // Check all fields in form reset password with Validator method
         $validator = Validator::make($request->all(), 
             [
             'email' =>'required|email', // Check field email
@@ -101,8 +209,6 @@ class UserController extends Controller
             try {
                 $email = $request->input('email');
                 $password = $request->input('password');
-                // $data = $this->user->findUserByEmail($email);
-                
                 $data;
                 $user = $this->user->findUserByEmail($email);
                 $admin = $this->admin->findAdminByEmail($email);
@@ -263,7 +369,6 @@ class UserController extends Controller
             $this->user->attempt = 0;
             $this->user->save();
             $email = $request['email'];
-            // $user = $this->user->findUserByEmail($email);
             Session::put('signup_email', $email);
             $link = route('login');
             Mail::send('admin.emails.signup', array('name' => $request['last_name'],'signup_email' => $request['email'], 'link' => $link), function($message) use ($email){
