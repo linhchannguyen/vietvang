@@ -14,7 +14,7 @@
                 <div class="form-group">
                     <table class="table">
                         <tr>
-                            <td width="40%" align="right"><label>(.xls, .xlsx)</label></td>
+                            <td width="40%" align="right"></td>
                             <td width="30%">
                                 <input type="file" name="user_file">
                                 {!! $errors->first('user_file', '<p class="help-block alert-danger">:message</p>') !!}

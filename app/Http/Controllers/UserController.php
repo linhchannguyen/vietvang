@@ -5,7 +5,8 @@
  * Place: Viet Vang Company
  */
 namespace App\Http\Controllers;
-use App\Page;
+
+use Config;
 use Excel;
 use App\User;
 use App\Http\Models\Admin;
@@ -79,6 +80,8 @@ class UserController extends Controller
                 'Phone Number'  => $value['phone'],
                 'Postcode'      => $value['postcode'],
                 'Email'         => $value['email'],
+                'Password'      => $value['password'],
+                'Address'       => $value['address'],
                 'Address'       => $value['address'],
                 'Activated'     => $value['activated'],
                 'Role'          => $value['role']);
@@ -96,16 +99,13 @@ class UserController extends Controller
      * Update or Create user with data into excel file
      */
     public function import(Request $request)
-    {
-        $result["status"] = false;
-        $result["message"] = "Không thể truy cập";
+    {        
         $validator = Validator::make($request->all(), 
             [
-            'user_file' =>'required|file|mimes:xls,xlsx,csv'
+                'user_file' =>'required'
             ],
             [
                 'user_file.required' => 'Vui lòng chọn file trước khi hành động',
-                'user_file.mimes' => 'File không hợp lệ',
             ]
         );
         if ($validator->fails()) {
@@ -124,37 +124,53 @@ class UserController extends Controller
                 "address",
                 "activated",
                 "role");
+            
+            $extension_arr = array(
+                'csv',
+                'txt',
+                'xls'
+            );
+            // Check extension file: xls, text, vcs
+            $file = $request->file('user_file');
+            $extension = $file->getClientOriginalExtension();
+            $count_ex = 0;
+            foreach($extension_arr as $ex) {
+                if($ex == $extension)
+                {
+                    $count_ex++;
+                }
+            }
+            if($count_ex == 0)
+            {
+                return back()->with('error', 'File phải là: xls, vcs, txt');  
+            }
             $path = $request->file('user_file')->getRealPath();
             // Get header file
             $results = Excel::selectSheetsByIndex(0)->load($path)->get();
-            // dd($header_arr[0]);     
-            $check = false;
             $c = 0;
             foreach($results as $res) {           
                 foreach($res as $key => $x){
-                    if($header_arr[$c] != $key)
+                    if($header_arr[$c] != $key || $key == null)
                     {
-                        $check = true;
                         return back()->with('error', 'Xem lại định dạng cột ' . $header_arr[$c] . '.');  
                     }
                     $c++;
                 }
                 break;
             }
-            // if($check == true)
-            // {
-            //     $check = false;
-            //     return back()->with('error', 'Cấu trúc file không khớp với dữ liệu trên bảng.');                    
-            // }
             $data = Excel::load($path)->get();
             if($data->count() > 0)
             {
+                $co = 2;
                 foreach($data->toArray() as $value)
-                {
-                    // dd($values);
-                    // foreach($values as $value)
-                    // {                        
-                    // }        
+                {     
+                    foreach($value as $key_val => $val)
+                    {
+                        if($val == null) {
+                            return back()->with('error', 'Dữ liệu cột ' . $key_val . ' trống tại dòng ' . $co);
+                        }
+                    }
+                    $co++;
                     $user_insert[] = array(
                         'role' => $value['role'],
                         'first_name' => $value['first_name'],
@@ -432,20 +448,6 @@ class UserController extends Controller
             $this->user->last_name = $request['last_name'];
             $this->user->email = $request['email'];
             $this->user->password = bcrypt($request['password']);
-            // $this->user->gender_id = $request['gender'];
-            // $this->user->birthday = $request['birthday'];
-            // if($request['postcode'] != null)
-            // {
-            //     $this->user->postcode = $request['postcode'];
-            // }
-            // if($request['phone'] != null)
-            // {
-            //     $this->user->phone = $request['phone'];
-            // }
-            // if($request['address'] != null)
-            // {
-            //     $this->user->address = $request['address'];
-            // }
             $this->user->activated = 1;
             $this->user->last_access = date('Y-m-d H:i:s');
             $this->user->attempt = 0;

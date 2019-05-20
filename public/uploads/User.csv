@@ -1,0 +1,5 @@
+First Name,Last Name,Gender ID,Birthday,Phone Number,Postcode,Email,Password,Address,Activated,Role
+Nguyen Van,Test,2,30-Apr-94,321321,248033,user@gmail.com,123123,HCM,1,2
+Nguyen,The An,1,29-Apr-96,2121212,123123,an@gmail.com,123123,TPHCM,1,2
+Moi,Test,1,30-Jan-95,123123,248033,user1@gmail.com,123123,HCM,1,2
+Moi,Test,1,30-Jan-95,123123,248033,user2@gmail.com,321321,HCM,1,2
