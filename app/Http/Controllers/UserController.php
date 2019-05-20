@@ -5,7 +5,7 @@
  * Place: Viet Vang Company
  */
 namespace App\Http\Controllers;
-
+use App\Page;
 use Excel;
 use App\User;
 use App\Http\Models\Admin;
@@ -97,55 +97,112 @@ class UserController extends Controller
      */
     public function import(Request $request)
     {
+        $result["status"] = false;
+        $result["message"] = "Không thể truy cập";
         $validator = Validator::make($request->all(), 
             [
-            'user_file' =>'required|mimes:xls,xlsx'
+            'user_file' =>'required|file|mimes:xls,xlsx,csv'
             ],
             [
                 'user_file.required' => 'Vui lòng chọn file trước khi hành động',
-                'user_file.mimes' => 'Vui lòng chọn file trước khi hành động',
+                'user_file.mimes' => 'File không hợp lệ',
             ]
         );
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator);
         }
         else {
+            $header_arr = array(
+                "first_name",
+                "last_name",
+                "gender_id",
+                "birthday",
+                "phone_number",
+                "postcode",
+                "email",
+                "password",
+                "address",
+                "activated",
+                "role");
             $path = $request->file('user_file')->getRealPath();
+            // Get header file
+            $results = Excel::selectSheetsByIndex(0)->load($path)->get();
+            // dd($header_arr[0]);     
+            $check = false;
+            $c = 0;
+            foreach($results as $res) {           
+                foreach($res as $key => $x){
+                    if($header_arr[$c] != $key)
+                    {
+                        $check = true;
+                        return back()->with('error', 'Xem lại định dạng cột ' . $header_arr[$c] . '.');  
+                    }
+                    $c++;
+                }
+                break;
+            }
+            // if($check == true)
+            // {
+            //     $check = false;
+            //     return back()->with('error', 'Cấu trúc file không khớp với dữ liệu trên bảng.');                    
+            // }
             $data = Excel::load($path)->get();
             if($data->count() > 0)
             {
-                foreach($data->toArray() as $values)
+                foreach($data->toArray() as $value)
                 {
-                    foreach($values as $value)
-                    {
-                        $user_insert[] = array(
-                            'role' => $value['role'],
-                            'first_name' => $value['first_name'],
-                            'last_name' => $value['last_name'],
-                            'email' => $value['email'],
-                            'password' => $value['password'],
-                            'gender_id' => $value['gender_id'],
-                            'birthday' => date('Y-m-d', strtotime($value['birthday'])),
-                            'postcode' => $value['postcode'],
-                            'phone' => $value['phone_number'],
-                            'address' => $value['address'],
-                            'activated' => $value['activated'],
-                        );
-                    }                    
+                    // dd($values);
+                    // foreach($values as $value)
+                    // {                        
+                    // }        
+                    $user_insert[] = array(
+                        'role' => $value['role'],
+                        'first_name' => $value['first_name'],
+                        'last_name' => $value['last_name'],
+                        'email' => $value['email'],
+                        'password' => $value['password'],
+                        'gender_id' => $value['gender_id'],
+                        'birthday' => date('Y-m-d', strtotime($value['birthday'])),
+                        'postcode' => $value['postcode'],
+                        'phone' => $value['phone_number'],
+                        'address' => $value['address'],
+                        'activated' => $value['activated'],
+                    );            
                 }
-                foreach($user_insert as $value)   
+                foreach($user_insert as $value)
                 {
-                    $users = $this->user->where('email', $value['email'])->get();
-                    
-                    if(count($users) != 0)
+                    $user = $this->user->where('email', $value['email'])->first();
+                    if($user)
                     {
+                        if($value['password'] != null)
+                        {
+                            if($length = strlen($value['password']) >= 6)
+                            {
+                                $this->user->where('email', $value['email'])
+                                ->update([
+                                'role' => $value['role'],
+                                'first_name' => $value['first_name'],
+                                'last_name' => $value['last_name'],
+                                'email' => $value['email'],
+                                'password' => bcrypt($value['password']),
+                                'gender_id' => $value['gender_id'],
+                                'birthday' => date('Y-m-d', strtotime($value['birthday'])),
+                                'postcode' => $value['postcode'],
+                                'phone' => $value['phone'],
+                                'address' => $value['address'],
+                                'activated' => $value['activated'],
+                                ]);
+                            }
+                            else {
+                                return back()->with('error', 'Mật khẩu user: ' . $user["email"] . ' không hợp lệ.');
+                            }
+                        }
                         $this->user->where('email', $value['email'])
                         ->update([
                         'role' => $value['role'],
                         'first_name' => $value['first_name'],
                         'last_name' => $value['last_name'],
                         'email' => $value['email'],
-                        'password' => bcrypt($value['password']),
                         'gender_id' => $value['gender_id'],
                         'birthday' => date('Y-m-d', strtotime($value['birthday'])),
                         'postcode' => $value['postcode'],
@@ -155,7 +212,32 @@ class UserController extends Controller
                         ]);
                     }
                     else {
-                        $this->user->insert($value);
+                        if($value['password'] == null)
+                        {
+                            return back()->with('error', 'Mật khẩu user: ' . $value["email"] . ' không thể bỏ trống.');
+
+                        }
+                        if($value['password'] != null)
+                        {
+                            if($length = strlen($value['password']) >= 6)
+                            {
+                                $this->user->role = $value['role'];
+                                $this->user->first_name = $value['first_name'];
+                                $this->user->last_name = $value['last_name'];
+                                $this->user->email = $value['email'];
+                                $this->user->password = bcrypt($value['password']);
+                                $this->user->gender_id = $value['gender_id'];
+                                $this->user->birthday = date('Y-m-d', strtotime($value['birthday']));
+                                $this->user->postcode = $value['postcode'];
+                                $this->user->phone = $value['phone'];
+                                $this->user->address = $value['address'];
+                                $this->user->activated = $value['activated'];
+                                $this->user->save();
+                            }
+                            else {
+                                return back()->with('error', 'Mật khẩu user: ' . $value["email"] . ' không hợp lệ.');
+                            }
+                        }
                     }
                 }
             }
@@ -560,7 +642,7 @@ class UserController extends Controller
      */
     public function logout(){
         $this->admin->adminLogout(Session::get('token'));
-        Auth::guard('admin')->logout(); 
+        Auth::guard('admin')->logout(); //Admin class extends Authenticatable class
         return Redirect::to('/login');
     }
 }

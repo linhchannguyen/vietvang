@@ -8,15 +8,6 @@
             <div class="col-lg-12">
                 <h1 class="page-header">Users</h1>
             </div>
-            <!-- @if(count($errors) > 0)
-            <div class="alert alert-danger">
-                <ul>
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-                </ul>
-            </div>
-            @endif -->
             <div class="col-lg-12">
             <form method="post" enctype="multipart/form-data" action="{{ route('import') }}">
             {{ csrf_field() }}
@@ -29,7 +20,8 @@
                                 {!! $errors->first('user_file', '<p class="help-block alert-danger">:message</p>') !!}
                             </td>
                             <td width="30%" align="left">
-                                <input type="submit" name="upload" class="btn btn-primary" value="Upload">
+                                <input type="submit" name="upload" class="btn btn-primary" value="Import">
+                                <a href="{{ route('export') }}" class="btn btn-primary">Export</a>
                             </td>
                         </tr>
                     </table>
@@ -45,6 +37,12 @@
                     <div class="panel-body">
                     @if($message = Session::get('success'))
                     <div class="alert alert-success alert-block">
+                        <button type="button" class="close" data-dismiss="alert">×</button>
+                            <strong>{{ $message }}</strong>
+                    </div>
+                    @endif
+                    @if($message = Session::get('error'))
+                    <div class="alert alert-danger alert-block">
                         <button type="button" class="close" data-dismiss="alert">×</button>
                             <strong>{{ $message }}</strong>
                     </div>
