@@ -13,5 +13,7 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         //
+        
+        'admin/delete_ajax',
     ];
 }

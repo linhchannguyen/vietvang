@@ -9,24 +9,24 @@
                 <h1 class="page-header">Users</h1>
             </div>
             <div class="col-lg-12">
-            <form method="post" enctype="multipart/form-data" action="{{ route('import') }}">
-            {{ csrf_field() }}
-                <div class="form-group">
-                    <table class="table">
-                        <tr>
-                            <td width="40%" align="right"></td>
-                            <td width="30%">
-                                <input type="file" name="user_file">
-                                {!! $errors->first('user_file', '<p class="help-block alert-danger">:message</p>') !!}
-                            </td>
-                            <td width="30%" align="left">
-                                <input type="submit" name="upload" class="btn btn-primary" value="Import">
-                                <a href="{{ route('export') }}" class="btn btn-primary">Export</a>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </form>
+                <form method="post" enctype="multipart/form-data" action="{{ route('import') }}">
+                {{ csrf_field() }}
+                    <div class="form-group">
+                        <table class="table">
+                            <tr>
+                                <td width="40%" align="right"></td>
+                                <td width="30%">
+                                    <input type="file" name="user_file">
+                                    {!! $errors->first('user_file', '<p class="help-block alert-danger">:message</p>') !!}
+                                </td>
+                                <td width="30%" align="left">
+                                    <input type="submit" name="upload" class="btn btn-primary" value="Import">
+                                    <a href="{{ route('export') }}" class="btn btn-primary">Export</a>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </form>
             </div>
             <!-- /.col-lg-12 -->
         </div>
@@ -48,6 +48,12 @@
                         </div>
                         @endif
                         <div class="table-responsive" id="tag_container">
+                            @if(count($users) <= 0)
+                            <div class="alert alert-danger alert-block">
+                                <button type="button" class="close" data-dismiss="alert">×</button>
+                                <strong>Dữ liệu trống</strong>
+                            </div>
+                            @else
                             <table class="table table-striped table-bordered table-hover">
                                 <thead>
                                     <tr>
@@ -60,9 +66,9 @@
                                         <th>Phone</th>
                                         <th>Address</th>
                                         <th>Action</th>
-                                        <th style="text-align: center; width: 40px;">
-                                        <button type="button" name="bulk_delete" id="bulk_delete" class="btn btn-danger btn-xs"><i class="glyphicon glyphicon-remove"></i></button>
-                                        <input type="checkbox" id="checkall">
+                                        <th style="width: 60px;">
+                                        <button style="float: left;" type="button" name="bulk_delete" id="bulk_delete" onclick="return confirm('Bạn có chắc muốn xóa?')" class="btn btn-danger btn-xs"><i class="glyphicon glyphicon-remove"></i></button>
+                                        <input style="float: right;" type="checkbox" id="checkall">
                                         </th>
                                     </tr>
                                 </thead>
@@ -91,12 +97,13 @@
                                                 ><a href="#"><i class="fa fa-pencil fa-fw"></i></a></span>
                                             <span><a href="#" class="deleteItem" data-id="{{ $user->id }}" onclick="return confirm('Bạn có chắc muốn xoá sản phẩm ?')"><i class="fa fa-trash-o fa-fw"></i></a></span>
                                         </td>
-                                        <td style="text-align: center;"><input type="checkbox" class="checkItem" value="{{$user->id}}"></td>
+                                        <td style="text-align: right;"><input type="checkbox" class="checkItem" value="{{$user->id}}"></td>
                                     </tr>
                                 @endforeach
                                 </tbody>
                             </table>
                             {{ $users->links('vendor.pagination.bootstrap-4') }}
+                            @endif
                         </div>
                         <!-- /.table-responsive -->
                     </div>
@@ -126,10 +133,12 @@
                         <div class="form-group">
                             <label class="control-label">First name:</label>
                             <input type="text" class="form-control" id="edit_first_name" autofocus>
+                            <p class="errorFirstname text-center alert-danger hidden"></p>
                         </div>
                         <div class="form-group">
                             <label class="control-label">Last name:</label>
                             <input type="text" class="form-control" id="edit_last_name">
+                            <p class="errorLastname text-center alert-danger hidden"></p>
                         </div>
                         <div class="form-group">
                             <label class="control-label">Gender:</label>
@@ -141,18 +150,22 @@
                         <div class="form-group">
                             <label class="control-label">Birthday:</label>
                             <input type="date" class="form-control" id="edit_birthday">
+                            <p class="errorBirthday text-center alert-danger hidden"></p>
                         </div>
                         <div class="form-group">
                             <label class="control-label">Post code:</label>
                             <input type="text" class="form-control" id="edit_post_code">
+                            <p class="errorPostcode text-center alert-danger hidden"></p>
                         </div>
                         <div class="form-group">
                             <label class="control-label">Phone:</label>
                             <input type="number" class="form-control" id="edit_phone">
+                            <p class="errorPhone text-center alert-danger hidden"></p>
                         </div>
                         <div class="form-group">
                             <label class="control-label">Address:</label>
-                            <textarea class="form-control" name="edit_address" id="edit_address"></textarea>                            
+                            <textarea class="form-control" name="edit_address" id="edit_address"></textarea>
+                            <p class="errorAddress text-center alert-danger hidden"></p>                           
                         </div>
                     </form>
                     <div class="modal-footer">

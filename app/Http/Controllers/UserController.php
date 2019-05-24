@@ -63,7 +63,7 @@ class UserController extends Controller
      * Delete user
      * Delete user by id
      */
-    function delete_user(Request $request){        
+    function delete_user(Request $request){      
         $arr_id = explode(",",$request->id);
         foreach($arr_id as $id)
         {
@@ -79,22 +79,29 @@ class UserController extends Controller
     }
 
     function update_user(Request $req, $id){
-        $post = $this->user->findOrFail($id);        
-        // $validator = Validator::make(Input::all(), $this->rules);
-        // if ($validator->fails()) {
-        //     return Response::json(array('errors' => $validator->getMessageBag()->toArray()));
-        // } else {
-        // $post = Post::findOrFail($id);
-        $post->first_name = $req->first_name;
-        $post->last_name = $req->last_name;
-        $post->gender_id = $req->gender_id;
-        $post->birthday = $req->birthday;
-        $post->postcode = $req->postcode;
-        $post->phone = $req->phone;
-        $post->address = $req->address;
-        $post->save();
-        return response()->json($post);
-        // }
+        $post = $this->user->findOrFail($id);
+        $validator = Validator::make($req->all(),
+        [
+            'first_name' => 'required|min:2|max:30',
+            'last_name' => 'required|min:2|max:30',
+            'birthday' => 'required|min:2|max:30',
+            'postcode' => 'required||regex:/[1-9]{2}[0]{4}/',
+            'phone' => 'required|regex:/(0)[1-9]{9}/',
+            'address' => 'required|min:3',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(array('errors' => $validator->getMessageBag()->toArray()));
+        } else {
+            $post->first_name = $req->first_name;
+            $post->last_name = $req->last_name;
+            $post->gender_id = $req->gender_id;
+            $post->birthday = $req->birthday;
+            $post->postcode = $req->postcode;
+            $post->phone = $req->phone;
+            $post->address = $req->address;
+            $post->save();
+            return response()->json($post);
+        }
     }
 
     public function export()
