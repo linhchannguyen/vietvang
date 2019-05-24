@@ -6,8 +6,9 @@
  */
 namespace App\Http\Controllers;
 
-use Config;
+use Datatables;
 use Excel;
+use DateTime;
 use App\User;
 use App\Http\Models\Admin;
 use App\Http\Models\Gender;
@@ -50,10 +51,50 @@ class UserController extends Controller
      * User list
      * Show list of users table
      */
-    public function user_list()
+    public function user_list(Request $request)
     {
         $users = $this->user->getAllUser();
+        if ($request->ajax()) {
+            return view('admin.users.user_list', compact('users'));
+        }
         return view('admin.users.user_list', compact('users'));
+    }
+    /**
+     * Delete user
+     * Delete user by id
+     */
+    function delete_user(Request $request){        
+        $arr_id = explode(",",$request->id);
+        foreach($arr_id as $id)
+        {
+            $this->user->find($id)->delete();
+        }
+    }
+
+    function delete_one($req){
+        $this->user->find($req)->delete();        
+        return response()->json([
+            'success' => 'Record deleted successfully!'
+        ]);
+    }
+
+    function update_user(Request $req, $id){
+        $post = $this->user->findOrFail($id);        
+        // $validator = Validator::make(Input::all(), $this->rules);
+        // if ($validator->fails()) {
+        //     return Response::json(array('errors' => $validator->getMessageBag()->toArray()));
+        // } else {
+        // $post = Post::findOrFail($id);
+        $post->first_name = $req->first_name;
+        $post->last_name = $req->last_name;
+        $post->gender_id = $req->gender_id;
+        $post->birthday = $req->birthday;
+        $post->postcode = $req->postcode;
+        $post->phone = $req->phone;
+        $post->address = $req->address;
+        $post->save();
+        return response()->json($post);
+        // }
     }
 
     public function export()
@@ -62,14 +103,13 @@ class UserController extends Controller
         $data_arr[] = array(
             'First Name',
             'Last Name',	
-            ' Gender ID',
+            'Gender ID',
             'Birthday',
             'Phone Number',
             'Postcode',	
             'Email',	
-            'Address',
-            'Activated',
-            'Role');
+            'Password',	
+            'Address',);
         foreach($users as $value)
         {
             $data_arr[] = array(
@@ -80,18 +120,15 @@ class UserController extends Controller
                 'Phone Number'  => $value['phone'],
                 'Postcode'      => $value['postcode'],
                 'Email'         => $value['email'],
-                'Password'      => $value['password'],
-                'Address'       => $value['address'],
-                'Address'       => $value['address'],
-                'Activated'     => $value['activated'],
-                'Role'          => $value['role']);
+                'Password'      => null,
+                'Address'       => $value['address'],);
         }
         Excel::create('Users', function($excel) use ($data_arr){
             $excel->setTitle('Users');
             $excel->sheet('Users', function($sheet) use ($data_arr){
                 $sheet->fromArray($data_arr, null, 'A1', false, false);
             });
-        })->download('xls');
+        })->download('csv');
     }
 
     /**
@@ -121,9 +158,7 @@ class UserController extends Controller
                 "postcode",
                 "email",
                 "password",
-                "address",
-                "activated",
-                "role");
+                "address",);
             
             $extension_arr = array(
                 'csv',
@@ -164,15 +199,61 @@ class UserController extends Controller
                 $co = 2;
                 foreach($data->toArray() as $value)
                 {     
+                    $con = 0;
+                    $check_con = false;
+                    for($i = 0; $i < count($data); $i++)
+                    {
+                        if(preg_match('/^[1-2]{1}$/', $data[$i]["gender_id"]) == false)
+                        {
+                            return back()->with('error', 'Giới tính không hợp lệ tại dòng số: ' . (intval($i) + 2));
+                        }
+                        if(preg_match('/^[0-9]{10}+$/', $data[$i]["phone_number"]) == false)
+                        {
+                            return back()->with('error', 'Số điện thoại không hợp lệ tại dòng số: ' . (intval($i) + 2));
+                        }
+                        if(preg_match('/^[1-9]{2}[0]{4}$/', $data[$i]['postcode']) == false)
+                        {
+                            return back()->with('error', 'Mã post code không hợp lệ tại dòng số: ' . (intval($i) + 2));
+                        }
+                        if (!filter_var($data[$i]['email'], FILTER_VALIDATE_EMAIL)) {
+                            return back()->with('error', 'Email: ' . $data[$i]["email"] . ' không hợp lệ tại dòng số: ' . (intval($i) + 2));
+                        }                        
+                        if(!$this->validateDate($data[$i]['birthday']))
+                        {
+                            return back()->with('error', 'Dữ liệu cột birthday tại dòng ' . (intval($i) + 2) . ' không hợp lệ');
+                        }
+                        if($data[$i]['password'] != null)
+                        {
+                            if(preg_match("/^.*(?=.{8,})(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).*$/", $data[$i]['password']) === 0)
+                            {
+                                return back()->with('error', 'Mật khẩu phải ít nhất 8 kí tự bao gồm chữ in hoa, chữ thường vá số.');
+                            }
+                        }
+                        if($value['email'] == $data[$i]['email'])
+                        {
+                            $con++;
+                        }
+                        if($con >= 2)
+                        {
+                            $check_con = true;
+                        }
+                    }
+                    if($check_con == true)
+                    {
+                        return back()->with('error', 'Dữ liệu excel cột Email: ' . $value["email"] . ' bị trùng!!.');
+                    }
                     foreach($value as $key_val => $val)
                     {
                         if($val == null) {
-                            return back()->with('error', 'Dữ liệu cột ' . $key_val . ' trống tại dòng ' . $co);
+                            if($key_val != 'password')
+                            {
+                                return back()->with('error', 'Dữ liệu cột ' . $key_val . ' trống tại dòng ' . $co);
+                            }                            
                         }
                     }
+                    
                     $co++;
                     $user_insert[] = array(
-                        'role' => $value['role'],
                         'first_name' => $value['first_name'],
                         'last_name' => $value['last_name'],
                         'email' => $value['email'],
@@ -182,76 +263,73 @@ class UserController extends Controller
                         'postcode' => $value['postcode'],
                         'phone' => $value['phone_number'],
                         'address' => $value['address'],
-                        'activated' => $value['activated'],
-                    );            
+                    );
                 }
-                foreach($user_insert as $value)
-                {
-                    $user = $this->user->where('email', $value['email'])->first();
+                $ccc = 0;
+                foreach($user_insert as $value_)
+                {          
+                    $ccc++;
+                    $user = $this->user->where('email', $value_['email'])->first();
                     if($user)
                     {
-                        if($value['password'] != null)
+                        if($value_['password'] != null)
                         {
-                            if($length = strlen($value['password']) >= 6)
+                            if($length = strlen($value_['password']) >= 8)
                             {
-                                $this->user->where('email', $value['email'])
+                                $this->user->where('email', $value_['email'])
                                 ->update([
-                                'role' => $value['role'],
-                                'first_name' => $value['first_name'],
-                                'last_name' => $value['last_name'],
-                                'email' => $value['email'],
-                                'password' => bcrypt($value['password']),
-                                'gender_id' => $value['gender_id'],
-                                'birthday' => date('Y-m-d', strtotime($value['birthday'])),
-                                'postcode' => $value['postcode'],
-                                'phone' => $value['phone'],
-                                'address' => $value['address'],
-                                'activated' => $value['activated'],
+                                'first_name' => $value_['first_name'],
+                                'last_name' => $value_['last_name'],
+                                'email' => $value_['email'],
+                                'password' => bcrypt($value_['password']),
+                                'gender_id' => $value_['gender_id'],
+                                'birthday' => date('Y-m-d', strtotime($value_['birthday'])),
+                                'postcode' => $value_['postcode'],
+                                'phone' => $value_['phone'],
+                                'address' => $value_['address'],
                                 ]);
                             }
                             else {
                                 return back()->with('error', 'Mật khẩu user: ' . $user["email"] . ' không hợp lệ.');
                             }
                         }
-                        $this->user->where('email', $value['email'])
+                        $this->user->where('email', $value_['email'])
                         ->update([
-                        'role' => $value['role'],
-                        'first_name' => $value['first_name'],
-                        'last_name' => $value['last_name'],
-                        'email' => $value['email'],
-                        'gender_id' => $value['gender_id'],
-                        'birthday' => date('Y-m-d', strtotime($value['birthday'])),
-                        'postcode' => $value['postcode'],
-                        'phone' => $value['phone'],
-                        'address' => $value['address'],
-                        'activated' => $value['activated'],
+                        'first_name' => $value_['first_name'],
+                        'last_name' => $value_['last_name'],
+                        'email' => $value_['email'],
+                        'gender_id' => $value_['gender_id'],
+                        'birthday' => date('Y-m-d', strtotime($value_['birthday'])),
+                        'postcode' => $value_['postcode'],
+                        'phone' => $value_['phone'],
+                        'address' => $value_['address'],
                         ]);
                     }
-                    else {
-                        if($value['password'] == null)
+                    else {       
+                        if($value_['password'] == null)
                         {
-                            return back()->with('error', 'Mật khẩu user: ' . $value["email"] . ' không thể bỏ trống.');
-
+                            return back()->with('error', 'Mật khẩu user: ' . $value_["email"] . ' không thể bỏ trống.');
                         }
-                        if($value['password'] != null)
+                        if($value_['password'] != null)
                         {
-                            if($length = strlen($value['password']) >= 6)
+                            if($length = strlen($value_['password']) >= 8)
                             {
-                                $this->user->role = $value['role'];
-                                $this->user->first_name = $value['first_name'];
-                                $this->user->last_name = $value['last_name'];
-                                $this->user->email = $value['email'];
-                                $this->user->password = bcrypt($value['password']);
-                                $this->user->gender_id = $value['gender_id'];
-                                $this->user->birthday = date('Y-m-d', strtotime($value['birthday']));
-                                $this->user->postcode = $value['postcode'];
-                                $this->user->phone = $value['phone'];
-                                $this->user->address = $value['address'];
-                                $this->user->activated = $value['activated'];
-                                $this->user->save();
+                                $this->user->insert([
+                                'role' => 2,
+                                'first_name' => $value_['first_name'],
+                                'last_name' => $value_['last_name'],
+                                'email' => $value_['email'],
+                                'password' => bcrypt($value_['password']),
+                                'gender_id' => $value_['gender_id'],
+                                'birthday' => date('Y-m-d', strtotime($value_['birthday'])),
+                                'postcode' => $value_['postcode'],
+                                'phone' => $value_['phone'],
+                                'address' => $value_['address'],
+                                'activated' => 1
+                                ]);
                             }
                             else {
-                                return back()->with('error', 'Mật khẩu user: ' . $value["email"] . ' không hợp lệ.');
+                                return back()->with('error', 'Mật khẩu user: ' . $value_["email"] . ' không hợp lệ.');
                             }
                         }
                     }
@@ -259,6 +337,31 @@ class UserController extends Controller
             }
             return back()->with('success', 'Excel Data Imported successfully.');
         }
+    }
+
+    /**
+     * Check password
+     */
+    public function validatePassword($password)
+    {
+        // $uppercase = preg_match('@[A-Z]@', $password);
+        // $lowercase = preg_match('@[a-z]@', $password);
+        // $number    = preg_match('@[0-9]@', $password);        
+    
+        // if(!$uppercase || !$lowercase || !$number || strlen($password) < 6) {
+        //     return false;
+        // }
+        // return true;
+        return preg_match('/^.*(?=.{8,})(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).*$/', $password) ? TRUE : FALSE;
+    }
+
+    /**
+     * Check data
+     */
+    public function validateDate($date, $format = 'Y-m-d')
+    {
+        $d = DateTime::createFromFormat($format, $date);
+        return $d && $d->format($format) == $date;
     }
 
     /**

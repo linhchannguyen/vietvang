@@ -41,10 +41,9 @@ class User extends Authenticatable
      */
     public static function getAllUser()
     {
-        return User::select('*')
+        return User::orderBy('id','asc')
                 ->leftJoin('genders', 'users.gender_id', '=', 'genders.gender_id')
-                ->leftJoin('user_types', 'users.role', '=', 'user_types.type_id')
-                ->get();
+                ->paginate(5);
     }
 
     /**

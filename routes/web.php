@@ -37,11 +37,14 @@ Route::group(['prefix' => '/admin'], function () {
         return view('admin.404_page');
     });
 });
+
 // Route group
-// Route::group(['prefix' => '/admin'], function () {
 Route::group(['prefix' => '/admin', 'middleware' => array('admin')], function () {
     Route::get('/', 'UserController@index')->name('/');
-    Route::get('/user-list', 'UserController@user_list')->name('user-list');
+    Route::get('/user-list', 'UserController@user_list')->name('user-list');    
+    Route::delete('/delete_user/{id}', 'UserController@delete_one');
+    Route::post('/delete_ajax', 'UserController@delete_user');
+    Route::put('/update_user/{id}', 'UserController@update_user');
     Route::get('/logout', 'UserController@logout')->name('logout');
     Route::post('/import', 'UserController@import')->name('import');
     Route::get('/export', 'UserController@export')->name('export');

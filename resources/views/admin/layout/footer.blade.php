@@ -1,7 +1,6 @@
 
         </div>
-        <!-- /#wrapper -->
-
+        
         <!-- jQuery -->
         <script src="{{url('assets/admin/js/jquery.min.js')}}"></script>
 
@@ -17,6 +16,8 @@
 
         <!-- Custom Theme JavaScript -->
         <script src="{{url('assets/admin/js/startmin.js')}}"></script>
+        <script src="{{url('assets/js/pages/my_ajax.js')}}"></script>
+        <script src="{{url('assets/js/pages/crud.js')}}"></script>
         <script>
             $(document).ready(function() {
                 $('#dataTables-example').DataTable({
