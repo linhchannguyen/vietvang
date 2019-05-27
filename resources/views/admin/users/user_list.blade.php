@@ -48,12 +48,6 @@
                         </div>
                         @endif
                         <div class="table-responsive" id="tag_container">
-                            @if(count($users) <= 0)
-                            <div class="alert alert-danger alert-block">
-                                <button type="button" class="close" data-dismiss="alert">×</button>
-                                <strong>Dữ liệu trống</strong>
-                            </div>
-                            @else
                             <table class="table table-striped table-bordered table-hover">
                                 <thead>
                                     <tr>
@@ -67,7 +61,7 @@
                                         <th>Address</th>
                                         <th>Action</th>
                                         <th style="width: 60px;">
-                                        <button style="float: left;" type="button" name="bulk_delete" id="bulk_delete" onclick="return confirm('Bạn có chắc muốn xóa?')" class="btn btn-danger btn-xs"><i class="glyphicon glyphicon-remove"></i></button>
+                                        <button style="float: left;" type="button" name="bulk_delete" id="bulk_delete" class="btn btn-danger btn-xs"><i class="glyphicon glyphicon-remove"></i></button>
                                         <input style="float: right;" type="checkbox" id="checkall">
                                         </th>
                                     </tr>
@@ -95,7 +89,7 @@
                                                 data-address="{{$user->address}}"
                                                 
                                                 ><a href="#"><i class="fa fa-pencil fa-fw"></i></a></span>
-                                            <span><a href="#" class="deleteItem" data-id="{{ $user->id }}" onclick="return confirm('Bạn có chắc muốn xoá sản phẩm ?')"><i class="fa fa-trash-o fa-fw"></i></a></span>
+                                            <span><a href="#" class="deleteItem" data-id="{{ $user->id }}"><i class="fa fa-trash-o fa-fw"></i></a></span>
                                         </td>
                                         <td style="text-align: right;"><input type="checkbox" class="checkItem" value="{{$user->id}}"></td>
                                     </tr>
@@ -103,7 +97,6 @@
                                 </tbody>
                             </table>
                             {{ $users->links('vendor.pagination.bootstrap-4') }}
-                            @endif
                         </div>
                         <!-- /.table-responsive -->
                     </div>

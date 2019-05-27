@@ -18,6 +18,7 @@ use Illuminate\Support\MessageBag;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Validator;
 
@@ -59,11 +60,18 @@ class UserController extends Controller
         }
         return view('admin.users.user_list', compact('users'));
     }
+
     /**
-     * Delete user
-     * Delete user by id
+     * Delete user array
+     * Delete a user array when selecting multiple users
      */
-    function delete_user(Request $request){      
+    function delete_user(Request $request){     
+        if(!Session::get('login'))
+        {
+            $result["status"] = false;
+            $result["message"] = "Phiên làm việc của bạn đã hết, vui lòng đăng nhập lại!";
+            return Response::json($result);
+        }
         $arr_id = explode(",",$request->id);
         foreach($arr_id as $id)
         {
@@ -71,13 +79,21 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * Delete user
+     * Delete a user by id
+     */
     function delete_one($req){
-        $this->user->find($req)->delete();        
-        return response()->json([
-            'success' => 'Record deleted successfully!'
-        ]);
+        $this->user->find($req)->delete();    
+        $result["status"] = true;
+        $result["message"] = "Delete success";     
+        return response()->json($result);  
     }
 
+    /**
+     * Update user
+     * Update user by id with user information
+     */
     function update_user(Request $req, $id){
         $post = $this->user->findOrFail($id);
         $validator = Validator::make($req->all(),
@@ -85,7 +101,7 @@ class UserController extends Controller
             'first_name' => 'required|min:2|max:30',
             'last_name' => 'required|min:2|max:30',
             'birthday' => 'required|min:2|max:30',
-            'postcode' => 'required||regex:/[1-9]{2}[0]{4}/',
+            'postcode' => 'required||regex:/[1-9]{1}[0-9]{1}[0]{4}/',
             'phone' => 'required|regex:/(0)[1-9]{9}/',
             'address' => 'required|min:3',
         ]);
@@ -347,23 +363,15 @@ class UserController extends Controller
     }
 
     /**
-     * Check password
+     * Validate password
      */
     public function validatePassword($password)
     {
-        // $uppercase = preg_match('@[A-Z]@', $password);
-        // $lowercase = preg_match('@[a-z]@', $password);
-        // $number    = preg_match('@[0-9]@', $password);        
-    
-        // if(!$uppercase || !$lowercase || !$number || strlen($password) < 6) {
-        //     return false;
-        // }
-        // return true;
         return preg_match('/^.*(?=.{8,})(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).*$/', $password) ? TRUE : FALSE;
     }
 
     /**
-     * Check data
+     * Validate date
      */
     public function validateDate($date, $format = 'Y-m-d')
     {
@@ -412,7 +420,7 @@ class UserController extends Controller
             ]
         );
         if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
+            return redirect()->back()->withErrors($validator);
         } else {
             try {
                 $email = $request->input('email');
@@ -436,7 +444,7 @@ class UserController extends Controller
                     $minutes = round((time() - strtotime($data->last_access)) / 60);
                     if ($minutes <= 30) {
                         $errors = new MessageBag(['error' => 'Tài khoản đã bị khóa']);
-                        return redirect()->back()->withInput()->withErrors($errors);
+                        return redirect()->back()->withErrors($errors);
                     } else {
                         if($data->role == 1){
                             $this->admin->updateAccount($email);
@@ -456,7 +464,7 @@ class UserController extends Controller
                             $data->save();
                             Session::put('name', $data['last_name']);
                             Session::put('id', $data->id);
-                            Session::put('role', $data->role);
+                            Session::put('email', $data->email);
                             Session::put('token', $token);
                             Session::put('login', TRUE);
                             return redirect('/welcome');
@@ -469,10 +477,10 @@ class UserController extends Controller
                             ->update([
                             'token' => $token,
                             ]);
+                            // Session::put('lastActivityTime', time());
                             Session::put('name', $data['last_name']);
                             Session::put('id', $data->id);
                             Session::put('email', $data->email);
-                            Session::put('role', $data->role);
                             Session::put('token', $token);
                             Session::put('login', TRUE);
                             $this->admin->loginSuccess($email);
@@ -508,8 +516,8 @@ class UserController extends Controller
     }
 
     /**
-     * Register
-     * User register account
+     * Signup
+     * Signup account user
      */
     public function user_signup()
     {
@@ -573,8 +581,8 @@ class UserController extends Controller
     }
 
     /**
-     * Register
-     * Admin register account
+     * Signup
+     * Signup account admin
      */
     public function admin_signup()
     {

@@ -39,7 +39,7 @@
                         </div>
                         <div class="panel-body">
                             <ul style="padding-inline-start: 0px;">
-                                <!-- @if ($errors->any())
+                                @if ($errors->any())
                                 <div class="alert alert-danger">
                                     @foreach ($errors->all() as $error)
                                         <li style="list-style: none;"> 
@@ -47,7 +47,7 @@
                                         </li>
                                     @endforeach
                                 </div>
-                                @endif -->
+                                @endif
                                 @if(\Session::has('alert-error'))
                                     <div class="alert alert-danger">
                                         <div>{{Session::get('alert-error')}}</div>

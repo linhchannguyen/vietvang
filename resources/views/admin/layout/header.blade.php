@@ -46,7 +46,7 @@
             <!-- Navigation -->
             <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
                 <div class="navbar-header">
-                    <a class="navbar-brand" href="#">Trang admin</a>
+                    <a class="navbar-brand" href="{{route('/')}}"><i class="fa fa-home fa-fw"></i> Home</a>
                 </div>
 
                 <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -57,7 +57,7 @@
                 </button>
 
                 <ul class="nav navbar-nav navbar-left navbar-top-links">
-                <li><a href="{{route('/')}}"><i class="fa fa-home fa-fw"></i> Trang chủ</a></li>
+                <li><a href="{{route('user-list')}}">User</a></li>
                 </ul>
 
                 <ul class="nav navbar-right navbar-top-links">
@@ -80,6 +80,18 @@
                 <div class="navbar-default sidebar" role="navigation">
                     <div class="sidebar-nav navbar-collapse">
                         <ul class="nav" id="side-menu">
+                            <li>
+                                <a href="#"><i class="fa fa-user-o fa-fw"></i> Users<span class="fa arrow"></span></a>
+                                <ul class="nav nav-second-level">
+                                    <li>
+                                        <a href="#">Create user</a>
+                                    </li>
+                                    <li>
+                                        <a href="{{route('user-list')}}">List user</a>
+                                    </li>
+                                </ul>
+                                <!-- /.nav-second-level -->
+                            </li>
                             <li>
                                 <a href="#"><i class="fa fa-user-o fa-fw"></i> Users<span class="fa arrow"></span></a>
                                 <ul class="nav nav-second-level">

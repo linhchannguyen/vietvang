@@ -1,28 +1,46 @@
 $(document).ready(function() {
-    var CSRF_TOKEN = $('meta[name="csrf-token"]').attr('content');
+    
     $('#checkall').change(function(){
         $('.checkItem').prop("checked", $(this).prop("checked"));
     });
     $('.deleteItem').click(function(e){
         e.preventDefault();
-        var id = $(this).data("id");
-        $.ajax({
-            url: '/admin/delete_user/'+id,
-            type: 'delete',
-            data: {
-                '_token': $('input[name=_token]').val(),
-                'id': $('.checkItem:checked').val()
-            },
-            success: function (msg){
-                window.setTimeout(function(){location.reload()},1500)
-                swal({
-                    text:"Xóa thành công.",
-                    button:true,
-                    icon:"success",
-                    timer: 2000
-                })                
+        // onclick="return confirm('Bạn có chắc muốn xoá sản phẩm ?')"
+        swal({
+            title: "Bạn có chắc muốn xoá?",
+            icon: "warning",
+            buttons: true,
+            dangerMode: true,
+        })
+        .then((isConfirm) => {
+            if (isConfirm) {
+                var id = $(this).data("id");
+                $.ajax({
+                    url: '/admin/delete_user/'+id,
+                    type: 'delete',
+                    data: {
+                        '_token': $('input[name=_token]').val(),
+                        'id': $('.checkItem:checked').val()
+                    },
+                    success: function (data){
+                        window.setTimeout(function(){location.reload()},1500)
+                        swal({
+                            text:"Xóa thành công.",
+                            button:true,
+                            icon:"success",
+                            timer: 2000
+                        })  
+                    },
+                    error: function(data) {
+                        alert(data);
+                        if(data != null && data.responseJSON != null && data.responseJSON.message != null) {
+                            alert(data.message);
+                        }
+                    }
+                });
             }
         });
+        
     });
     $('#bulk_delete').click(function(e){
         e.preventDefault();
@@ -41,21 +59,30 @@ $(document).ready(function() {
             /**
              * Phương thức post không gửi token
              */
-            $.ajax({
-                method: 'post',
-                url: '/admin/delete_ajax',
-                data: {id: id},
-                success: function(msg){
-                    swal({
-                        text:"Xóa thành công.",
-                        button:true,
-                        icon:"success",
-                        timer: 2000
-                    })
-                    window.setTimeout(function(){location.reload()},1500)
+            swal({
+                title: "Bạn có chắc muốn xoá?",
+                icon: "warning",
+                buttons: true,
+                dangerMode: true,
+            })
+            .then((isConfirm) => {
+                if (isConfirm) {                    
+                    $.ajax({
+                        method: 'post',
+                        url: '/admin/delete_ajax',
+                        data: {id: id},
+                        success: function(msg){
+                            swal({
+                                text:"Xóa thành công.",
+                                button:true,
+                                icon:"success",
+                                timer: 2000
+                            })
+                            window.setTimeout(function(){location.reload()},1500)
+                        }
+                    });
                 }
             });
-
             /*
             * Phương thức post gửi token
             */

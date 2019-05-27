@@ -19,13 +19,12 @@ class IsAdmin
      */
     public function handle($request, Closure $next)
     {
-        if(!Session::get('login', true))
+        if(!Session::get('login'))
         {
-            $errors = new MessageBag(['errors' => 'Vui lòng đăng nhập lại!']);
-            return redirect('/login')->withInput()->withErrors($errors);
+            $errors = new MessageBag(['errors' => 'Phiên làm việc của bạn đã hết, vui lòng đăng nhập lại!']);
+            return redirect('/login')->withErrors($errors);
         }
 
-        $role = Session::get('role');
         $email = Session::get('email');
         $ad = Admin::where('email', $email)->first();
         if(!$ad)
@@ -43,17 +42,6 @@ class IsAdmin
             $errors = new MessageBag(['errors' => 'Vui lòng đăng nhập lại!']);
             return redirect('/login')->withInput()->withErrors($errors);
         }
-        // if(Auth::check())
-        // {
-        //     $user = \auth()->user();
-        //     if($user) {
-        //         if($user->role != 1)
-        //         {
-        //             $errors = new MessageBag(['errors' => 'Bạn không phải Admin!']);
-        //             return redirect('/login')->withInput()->withErrors($errors);
-        //         }
-        //     }
-        // }    
         return $next($request);
     }
 }

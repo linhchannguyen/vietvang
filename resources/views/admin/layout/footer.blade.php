@@ -19,11 +19,11 @@
         <script src="{{url('assets/js/pages/my_ajax.js')}}"></script>
         <script src="{{url('assets/js/pages/crud.js')}}"></script>
         <script>
-            // $(document).ready(function() {
-            //     $('#dataTables-example').DataTable({
-            //             responsive: true
-            //     });
-            // });
+            $(document).ready(function() {
+                $('#dataTables-example').DataTable({
+                        responsive: true
+                });
+            });
         </script>
         @yield('script')
     </body>
